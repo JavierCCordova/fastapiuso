@@ -31,6 +31,17 @@ def mensaje():
 def mensaje_ventas():
     return ventas
 
+@app.get('/ventas/{id}',tags=['ventas'])
+def buscar_ventas(id:int):
+    for x in ventas:
+        if x['id'] == id:
+            print(x['importe'])
+            return x['tienda']
+        else:
+            continue
+        
+
+        
 
 #uvicorn main:app --reload
 #uvicorn main:app --reload --port 5000
