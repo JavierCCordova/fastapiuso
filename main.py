@@ -11,7 +11,7 @@ ventas =[
         'id':1,
         'fecha':'20230706',
         'importe':2500,
-        'tienda':'c'
+        'tienda':'tienda01'
     },
     {
         'id':2,
