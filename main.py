@@ -11,7 +11,7 @@ ventas =[
         'id':1,
         'fecha':'20230706',
         'importe':2500,
-        'tienda':'tienda01'
+        'tienda':'c'
     },
     {
         'id':2,
@@ -35,13 +35,15 @@ def mensaje_ventas():
 def buscar_ventas(id:int):
     for x in ventas:
         if x['id'] == id:
-            print(x['importe'])
-            return x['tienda']
+            print(x)
+            return x
         else:
             continue
         
-
-        
+@app.get('/ventas/',tags=['ventas'])
+def buscar_ventas_x_tienda(tienda: str,id: int):
+    return [elemento for elemento in ventas if elemento['tienda'] == tienda]
+          
 
 #uvicorn main:app --reload
 #uvicorn main:app --reload --port 5000
