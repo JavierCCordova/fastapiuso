@@ -1,6 +1,7 @@
 from fastapi import FastAPI,Body # importamos la libreria
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel,Field 
+# Basemodel = para declarar tipos clases, #Field herramienta para las validaciones
 from typing import Optional
 
 app = FastAPI()
@@ -25,11 +26,22 @@ List_venta =[
 
 #Vamos a crear un modelo.
 class Ventas(BaseModel):
-    id: Optional[int]=None
+    #id: Optional[int]=None  #En caso que no se tenga validacion en el objeto
+    id: int =Field(ge=0,le=200)
     fecha:str
-    tienda:str
+    #tienda:str = Field(default="tienda01",min_length=4, max_length=20)
+    tienda:str = Field(min_length=4, max_length=20)
+    #tienda:str
     importe:float
-        
+    class Config:
+        schema_extra = {
+            "example":{
+                "id":1,
+                "fecha":'2023-12-01',
+                'tienda':'tienda01',
+                'importe': 10
+            }
+        }        
 
 @app.post('/venta_ob',tags=['venta_obj'])
 def venta_obt(venta:Ventas):
