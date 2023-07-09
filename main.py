@@ -68,6 +68,12 @@ def actualizamos_venta(id:int,fecha:str=Body(),tienda:str=Body(),importe:float=B
 
     return ventas
  
+@app.delete('/ventas/{id}',tags=['Ventas'])
+def eliminar_ventas(id:int):
+    for element in ventas:
+        if element['id'] == id:
+            ventas.remove(element)
+        return ventas
 
 #uvicorn main:app --reload
 #uvicorn main:app --reload --port 5000
