@@ -1,4 +1,4 @@
-from fastapi import FastAPI # importamos la libreria
+from fastapi import FastAPI,Body # importamos la libreria
 from fastapi.responses import HTMLResponse
 
 app = FastAPI()
@@ -44,6 +44,17 @@ def buscar_ventas(id:int):
 def buscar_ventas_x_tienda(tienda: str,id: int):
     return [elemento for elemento in ventas if elemento['tienda'] == tienda]
           
+@app.post('/ventas',tags=['Ventas'])
+def crea_venta(id:int = Body(),fecha:str =Body(),tienda:str = Body(), importe:float =Body()):
+    ventas.append(
+        {
+            "id":id,
+            "fecha":fecha,
+            "tienda":tienda,
+            "importe":importe
+        }
+    )
+    return ventas
 
 #uvicorn main:app --reload
 #uvicorn main:app --reload --port 5000
