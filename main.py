@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse,JSONResponse #agregamos JsnResponse p
 from pydantic import BaseModel,Field 
 # Basemodel = para declarar tipos clases, #Field herramienta para las validaciones
 from typing import Optional,List #list para poder enviar el tipo que deseamos obtener
+from jwt_config import get_token
 
 app = FastAPI()
 app.title = 'aplicacion mensaje'
@@ -24,6 +25,19 @@ List_venta =[
         'tienda': 'tienda02'
     }
 ]
+######## Tipo Clase validacion ################3
+class Usuario(BaseModel):
+    email:str
+    clave:str
+
+    #creamos ruta para login
+@app.post('/login',tags=['autenticacion'])    
+def login(usuario:Usuario):
+    if usuario.email == 'holamundo@gmail.com' and usuario.clave=='123':
+        #obtener el token pasale 
+        token = get_token(usuario.dict())
+        return JSONResponse(content=token,status_code=200)
+    return JSONResponse(content={"mensaje":'Error de acceso denegado'},status_code=400)
 
 ######## Tipo Clase ################3
 #Vamos a crear un modelo.
