@@ -46,16 +46,16 @@ class Ventas(BaseModel):
             }
         }        
 #8 #12 JSONResponse #12.1 devolver tipo objeto
-@app.post('/venta_ob',tags=['venta_obj'],response_model=dict) 
+@app.post('/venta_ob',tags=['venta_obj'],response_model=dict,status_code=200) 
                                         #indicamos que vamos a devolver un modelo tipo ventas
 def venta_obt(venta:Ventas)->List[Ventas]:
     venta = dict(venta)
     List_venta.append(venta)
     #return List_venta #8
-    return JSONResponse(content=List_venta)
+    return JSONResponse(content=List_venta,status_code=200)
 
 #9  #12 JSONResponse
-@app.put('/venta_ob/{id}',tags=['venta_obt'],response_model=dict)
+@app.put('/venta_ob/{id}',tags=['venta_obt'],response_model=dict,status_code=201)
 def venta_act(id:int, ventas:Ventas)->Ventas:
     for element in List_venta:
         if element['id']==id:
@@ -63,7 +63,7 @@ def venta_act(id:int, ventas:Ventas)->Ventas:
             element['tienda'] = ventas.tienda
             element['importe'] = ventas.importe
     #return List_venta
-    return JSONResponse(content={'mensaje':'Actualizada venta'})
+    return JSONResponse(content={'mensaje':'Actualizada venta'},status_code=201)
 
 ######## Tipo Clase ################3
 
@@ -74,22 +74,22 @@ def mensaje():
     return HTMLResponse('<h2> Titulo de fast api</h2> ') #salida de fast api
 
 #2 #12 vamos a devolver por jsonResponse
-@app.get('/ventas',tags=['ventas'],response_model=List[Ventas])
+@app.get('/ventas',tags=['ventas'],response_model=List[Ventas],status_code=200)
 def mensaje_ventas()->List[Ventas]:
     #return List_venta #2
-    return JSONResponse(content=List_venta)
+    return JSONResponse(content=List_venta,status_code=200)
 
 #3 #10 agregamos path #12 devolvermos JSONResponse el dato x
-@app.get('/ventas/{id}',tags=['ventas'],response_model=List[Ventas])
+@app.get('/ventas/{id}',tags=['ventas'],response_model=List[Ventas], status_code=200)
 def buscar_ventas(id:int = Path(ge=1,le=100))->Ventas:
     for x in List_venta:
         if x['id'] == id:
             print(x)
             #return x
-            return JSONResponse(content=x)
+            return JSONResponse(content=x,status_code=200)
         else:
             continue
-    JSONResponse(content=[])
+    return JSONResponse(content=[],status_code=404)
 
 #4  # 11 Se agrega Query #JSONResponse
 @app.get('/ventas/',tags=['ventas'],response_model=List[Ventas])
@@ -100,7 +100,7 @@ def buscar_ventas_x_tienda(tienda: str =Query(min_length=4,max_length=20),id: in
     return JSONResponse(content=datos) #12
 
 #5          #12 JSONResponse
-@app.post('/ventas',tags=['Ventas'],response_model=List[Ventas])
+@app.post('/ventas',tags=['Ventas'],response_model=List[Ventas],status_code=201)
 def crea_venta(id:int = Body(),fecha:str =Body(),tienda:str = Body(), importe:float =Body())->dict:
     List_venta.append(
         {
@@ -111,10 +111,10 @@ def crea_venta(id:int = Body(),fecha:str =Body(),tienda:str = Body(), importe:fl
         }
     )
     #return List_venta #5
-    return JSONResponse(content={'Mensaje':'Venta Registrada'}) #12 JSONResponse
+    return JSONResponse(content={'Mensaje':'Venta Registrada'},status_code=201) #12 JSONResponse
 
 #6
-@app.put('/ventas/{id}',tags=['Ventas'],response_model=dict)
+@app.put('/ventas/{id}',tags=['Ventas'],response_model=dict,status_code=201)
 def actualizamos_venta(id:int,fecha:str=Body(),tienda:str=Body(),importe:float=Body())->dict:
     #recorremos los elementos de la lista.
     for elemen in List_venta:
@@ -125,16 +125,16 @@ def actualizamos_venta(id:int,fecha:str=Body(),tienda:str=Body(),importe:float=B
     #ventas = elemen    
 
    # return List_venta #6
-    return JSONResponse(content={'mensaje':'Registro Actualizado'})
+    return JSONResponse(content={'mensaje':'Registro Actualizado'},status_code=201)
 #7   #12 JSONResponse
-@app.delete('/ventas/{id}',tags=['Ventas'],response_model=dict)
+@app.delete('/ventas/{id}',tags=['Ventas'],response_model=dict,status_code=200)
 def eliminar_ventas(id:int)->dict:
     for element in List_venta:
         if element['id'] == id:
             List_venta.remove(element)
             return JSONResponse(content={'mensaje':'Se elimino sin inconvenientes'})
         #return List_venta
-    return JSONResponse(content={'mensaje':'No se encontro'})
+    return JSONResponse(content={'mensaje':'No se encontro'},status_code=200)
 
 #uvicorn main:app --reload
 #uvicorn main:app --reload --port 5000
