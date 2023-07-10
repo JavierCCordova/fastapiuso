@@ -1,9 +1,9 @@
 # importamos la libreria
 from fastapi import FastAPI, Body, Path, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse,JSONResponse #agregamos JsnResponse para poder mandar respuestas
 from pydantic import BaseModel,Field 
 # Basemodel = para declarar tipos clases, #Field herramienta para las validaciones
-from typing import Optional
+from typing import Optional,List #list para poder enviar el tipo que deseamos obtener
 
 app = FastAPI()
 app.title = 'aplicacion mensaje'
@@ -25,6 +25,7 @@ List_venta =[
     }
 ]
 
+######## Tipo Clase ################3
 #Vamos a crear un modelo.
 #8, 9
 class Ventas(BaseModel):
@@ -44,49 +45,63 @@ class Ventas(BaseModel):
                 'importe': 10
             }
         }        
-#8
-@app.post('/venta_ob',tags=['venta_obj'])
-def venta_obt(venta:Ventas):
+#8 #12 JSONResponse #12.1 devolver tipo objeto
+@app.post('/venta_ob',tags=['venta_obj'],response_model=dict) 
+                                        #indicamos que vamos a devolver un modelo tipo ventas
+def venta_obt(venta:Ventas)->List[Ventas]:
+    venta = dict(venta)
     List_venta.append(venta)
-    return List_venta
-#9
-@app.put('/venta_ob/{id}',tags=['venta_obt'])
-def venta_act(id:int, ventas:Ventas):
+    #return List_venta #8
+    return JSONResponse(content=List_venta)
+
+#9  #12 JSONResponse
+@app.put('/venta_ob/{id}',tags=['venta_obt'],response_model=dict)
+def venta_act(id:int, ventas:Ventas)->Ventas:
     for element in List_venta:
         if element['id']==id:
             element['fecha']=ventas.fecha
             element['tienda'] = ventas.tienda
             element['importe'] = ventas.importe
-    return List_venta
+    #return List_venta
+    return JSONResponse(content={'mensaje':'Actualizada venta'})
 
-#creamos punto de entrada o end point #1
+######## Tipo Clase ################3
+
+#creamos punto de entrada o end point #1 
 @app.get('/',tags=['Inicio'])#cambio de etiqueta en documentacion
 def mensaje():
     #return 'Holamundo2'
     return HTMLResponse('<h2> Titulo de fast api</h2> ') #salida de fast api
 
-#2
-@app.get('/ventas',tags=['ventas'])
-def mensaje_ventas():
-    return List_venta
+#2 #12 vamos a devolver por jsonResponse
+@app.get('/ventas',tags=['ventas'],response_model=List[Ventas])
+def mensaje_ventas()->List[Ventas]:
+    #return List_venta #2
+    return JSONResponse(content=List_venta)
 
-#3 #10 agregamos path
-@app.get('/ventas/{id}',tags=['ventas'])
-def buscar_ventas(id:int = Path(ge=1,le=100)):
+#3 #10 agregamos path #12 devolvermos JSONResponse el dato x
+@app.get('/ventas/{id}',tags=['ventas'],response_model=List[Ventas])
+def buscar_ventas(id:int = Path(ge=1,le=100))->Ventas:
     for x in List_venta:
         if x['id'] == id:
             print(x)
-            return x
+            #return x
+            return JSONResponse(content=x)
         else:
             continue
-#4  # 11 Se agrega Query
-@app.get('/ventas/',tags=['ventas'])
-def buscar_ventas_x_tienda(tienda: str =Query(min_length=4,max_length=20),id: int =Query(ge=1 ,le=100)):
-    return [elemento for elemento in List_venta if elemento['tienda'] == tienda]
+    JSONResponse(content=[])
 
-#5          
-@app.post('/ventas',tags=['Ventas'])
-def crea_venta(id:int = Body(),fecha:str =Body(),tienda:str = Body(), importe:float =Body()):
+#4  # 11 Se agrega Query #JSONResponse
+@app.get('/ventas/',tags=['ventas'],response_model=List[Ventas])
+def buscar_ventas_x_tienda(tienda: str =Query(min_length=4,max_length=20),id: int =Query(ge=1 ,le=100))->List[Ventas]:
+    datos =[elemento for elemento in List_venta if elemento['tienda'] == tienda] #12
+    print(datos)
+    #return [elemento for elemento in List_venta if elemento['tienda'] == tienda] #4
+    return JSONResponse(content=datos) #12
+
+#5          #12 JSONResponse
+@app.post('/ventas',tags=['Ventas'],response_model=List[Ventas])
+def crea_venta(id:int = Body(),fecha:str =Body(),tienda:str = Body(), importe:float =Body())->dict:
     List_venta.append(
         {
             "id":id,
@@ -95,10 +110,12 @@ def crea_venta(id:int = Body(),fecha:str =Body(),tienda:str = Body(), importe:fl
             "importe":importe
         }
     )
-    return List_venta
+    #return List_venta #5
+    return JSONResponse(content={'Mensaje':'Venta Registrada'}) #12 JSONResponse
+
 #6
-@app.put('/ventas/{id}',tags=['Ventas'])
-def actualizamos_venta(id:int,fecha:str=Body(),tienda:str=Body(),importe:float=Body()):
+@app.put('/ventas/{id}',tags=['Ventas'],response_model=dict)
+def actualizamos_venta(id:int,fecha:str=Body(),tienda:str=Body(),importe:float=Body())->dict:
     #recorremos los elementos de la lista.
     for elemen in List_venta:
         if  elemen['id'] == id:
@@ -107,14 +124,17 @@ def actualizamos_venta(id:int,fecha:str=Body(),tienda:str=Body(),importe:float=B
             elemen['importe'] = importe
     #ventas = elemen    
 
-    return List_venta
-#7 
-@app.delete('/ventas/{id}',tags=['Ventas'])
-def eliminar_ventas(id:int):
+   # return List_venta #6
+    return JSONResponse(content={'mensaje':'Registro Actualizado'})
+#7   #12 JSONResponse
+@app.delete('/ventas/{id}',tags=['Ventas'],response_model=dict)
+def eliminar_ventas(id:int)->dict:
     for element in List_venta:
         if element['id'] == id:
             List_venta.remove(element)
-        return List_venta
+            return JSONResponse(content={'mensaje':'Se elimino sin inconvenientes'})
+        #return List_venta
+    return JSONResponse(content={'mensaje':'No se encontro'})
 
 #uvicorn main:app --reload
 #uvicorn main:app --reload --port 5000
