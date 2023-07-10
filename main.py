@@ -1,10 +1,14 @@
 # importamos la libreria
-from fastapi import FastAPI, Body, Path, Query
-from fastapi.responses import HTMLResponse,JSONResponse #agregamos JsnResponse para poder mandar respuestas
+from fastapi import FastAPI, Body, Path, Query, Request,HTTPException, Depends #14 Request,HTTPException,Depends
+from fastapi.security import HTTPBearer # 14 para la seguridad aplicarlo
+from fastapi.responses import HTMLResponse,JSONResponse
+from fastapi.security.http import HTTPAuthorizationCredentials #agregamos JsnResponse para poder mandar respuestas
 from pydantic import BaseModel,Field 
 # Basemodel = para declarar tipos clases, #Field herramienta para las validaciones
-from typing import Optional,List #list para poder enviar el tipo que deseamos obtener
-from jwt_config import get_token
+from typing import Optional,List
+
+from starlette.requests import Request #list para poder enviar el tipo que deseamos obtener
+from jwt_config import get_token,valide_token
 
 app = FastAPI()
 app.title = 'aplicacion mensaje'
@@ -25,12 +29,20 @@ List_venta =[
         'tienda': 'tienda02'
     }
 ]
+######## Portador de token ################14
+class Portador(HTTPBearer):
+    async def __call__(self, request: Request):
+        autorizacion = await super().__call__(request)
+        dato = valide_token(autorizacion.credentials)
+        if dato['email']!= 'holamundo@gmail.com':
+            raise HTTPException(status_code=403, detail='No autorizado')
+
 ######## Tipo Clase validacion ################3
 class Usuario(BaseModel):
     email:str
     clave:str
 
-    #creamos ruta para login
+    #creamos ruta para login #13 para haacer pruebas de token para usarlo
 @app.post('/login',tags=['autenticacion'])    
 def login(usuario:Usuario):
     if usuario.email == 'holamundo@gmail.com' and usuario.clave=='123':
@@ -60,7 +72,7 @@ class Ventas(BaseModel):
             }
         }        
 #8 #12 JSONResponse #12.1 devolver tipo objeto
-@app.post('/venta_ob',tags=['venta_obj'],response_model=dict,status_code=200) 
+@app.post('/venta_ob',tags=['venta_obj'],response_model=List[Ventas],status_code=200) 
                                         #indicamos que vamos a devolver un modelo tipo ventas
 def venta_obt(venta:Ventas)->List[Ventas]:
     venta = dict(venta)
@@ -88,7 +100,7 @@ def mensaje():
     return HTMLResponse('<h2> Titulo de fast api</h2> ') #salida de fast api
 
 #2 #12 vamos a devolver por jsonResponse
-@app.get('/ventas',tags=['ventas'],response_model=List[Ventas],status_code=200)
+@app.get('/ventas',tags=['ventas'],response_model=List[Ventas],status_code=200,dependencies=[Depends(Portador())])
 def mensaje_ventas()->List[Ventas]:
     #return List_venta #2
     return JSONResponse(content=List_venta,status_code=200)
