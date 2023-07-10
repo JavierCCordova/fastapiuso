@@ -3,9 +3,13 @@ from fastapi import FastAPI, Body, Path, Query, Request,HTTPException, Depends #
 from fastapi.security import HTTPBearer # 14 para la seguridad aplicarlo
 from fastapi.responses import HTMLResponse,JSONResponse
 from fastapi.security.http import HTTPAuthorizationCredentials #agregamos JsnResponse para poder mandar respuestas
+from fastapi.encoders import jsonable_encoder #16 para pasar listado json
 from pydantic import BaseModel,Field 
 # Basemodel = para declarar tipos clases, #Field herramienta para las validaciones
 from typing import Optional,List
+
+from config.BBDD import sesion,motor,base
+from modelos.ventas import Ventas as Ventas_modelo
 
 from starlette.requests import Request #list para poder enviar el tipo que deseamos obtener
 from jwt_config import get_token,valide_token
@@ -13,6 +17,8 @@ from jwt_config import get_token,valide_token
 app = FastAPI()
 app.title = 'aplicacion mensaje'
 app.version = '1.0.1'
+
+base.metadata.create_all(bind=motor)
 
 #vamos usarlo para mostrar nada mas
 List_venta =[
@@ -56,7 +62,8 @@ def login(usuario:Usuario):
 #8, 9
 class Ventas(BaseModel):
     #id: Optional[int]=None  #En caso que no se tenga validacion en el objeto
-    id: int =Field(ge=0,le=200)
+    #id: int =Field(ge=0,le=200)
+    id: Optional[int]=None 
     fecha:str
     #tienda:str = Field(default="tienda01",min_length=4, max_length=20)
     tienda:str = Field(min_length=4, max_length=20)
@@ -71,18 +78,27 @@ class Ventas(BaseModel):
                 'importe': 10
             }
         }        
-#8 #12 JSONResponse #12.1 devolver tipo objeto
+#8 #12 JSONResponse #12.1 devolver tipo objeto #16 sessiones
 @app.post('/venta_ob',tags=['venta_obj'],response_model=List[Ventas],status_code=200) 
                                         #indicamos que vamos a devolver un modelo tipo ventas
-def venta_obt(venta:Ventas)->List[Ventas]:
+def venta_obt(venta:Ventas)->dict:
+    db = sesion() #16 
+    #Traemos los atributos para el modelo.
+    nueva_venta = Ventas_modelo(**venta.dict())
+    #añadir bbdd y commit para actualizar
+    db.add(nueva_venta)
+    db.commit()
+
+    ''' 
     venta = dict(venta)
     List_venta.append(venta)
     #return List_venta #8
     return JSONResponse(content=List_venta,status_code=200)
+    '''
+    return JSONResponse(content={'mensaje':'Venta registrada'},status_code=200)
 
 #9  #12 JSONResponse
-@app.put('/venta_ob/{id}',tags=['venta_obt'],response_model=dict,status_code=201)
-def venta_act(id:int, ventas:Ventas)->Ventas:
+'''
     for element in List_venta:
         if element['id']==id:
             element['fecha']=ventas.fecha
@@ -90,6 +106,16 @@ def venta_act(id:int, ventas:Ventas)->Ventas:
             element['importe'] = ventas.importe
     #return List_venta
     return JSONResponse(content={'mensaje':'Actualizada venta'},status_code=201)
+'''
+@app.put('/venta_ob/{id}',tags=['venta_obt'],response_model=List[Ventas],status_code=201)
+def venta_act(id:int, ventas:Ventas)->List[Ventas]:
+  
+    db =sesion()
+    resultado = db.query(Ventas_modelo).filter(Ventas_modelo.id == id).all()
+    if not resultado:
+        return JSONResponse(status_code=404,content={'mensaje':'No se encontro id'})
+    else:
+        return JSONResponse(status_code=200,content=jsonable_encoder(resultado))
 
 ######## Tipo Clase ################3
 
@@ -102,12 +128,16 @@ def mensaje():
 #2 #12 vamos a devolver por jsonResponse
 @app.get('/ventas',tags=['ventas'],response_model=List[Ventas],status_code=200,dependencies=[Depends(Portador())])
 def mensaje_ventas()->List[Ventas]:
+    #15 para obtener de la bbdd
+    bd = sesion()    
+    resultado = bd.query(Ventas_modelo).all()
+
+    return JSONResponse(status_code=200,content=jsonable_encoder(resultado))
     #return List_venta #2
-    return JSONResponse(content=List_venta,status_code=200)
+    #return JSONResponse(content=List_venta,status_code=200) 
 
 #3 #10 agregamos path #12 devolvermos JSONResponse el dato x
-@app.get('/ventas/{id}',tags=['ventas'],response_model=List[Ventas], status_code=200)
-def buscar_ventas(id:int = Path(ge=1,le=100))->Ventas:
+    '''
     for x in List_venta:
         if x['id'] == id:
             print(x)
@@ -115,15 +145,34 @@ def buscar_ventas(id:int = Path(ge=1,le=100))->Ventas:
             return JSONResponse(content=x,status_code=200)
         else:
             continue
-    return JSONResponse(content=[],status_code=404)
+    return JSONResponse(content=[],status_code=404)'''    
+@app.get('/ventas/{id}',tags=['ventas'],response_model=List[Ventas], status_code=200)
+def buscar_ventas(id:int = Path(ge=1,le=100))->Ventas:
+    #15 consulta BBDD
+    bd = sesion()
+    resultado = bd.query(Ventas_modelo).filter(Ventas_modelo.id == id).all()
+
+    if not resultado:
+        return JSONResponse(status_code=404,content={'mensaje':'No se encontro el identificador'})
+    else:
+        return JSONResponse(status_code=200,content=jsonable_encoder(resultado))
+
 
 #4  # 11 Se agrega Query #JSONResponse
 @app.get('/ventas/',tags=['ventas'],response_model=List[Ventas])
 def buscar_ventas_x_tienda(tienda: str =Query(min_length=4,max_length=20),id: int =Query(ge=1 ,le=100))->List[Ventas]:
+    db=sesion()
+    resultado = db.query(Ventas_modelo).filter(Ventas_modelo.tienda==tienda).all()
+    if not resultado:
+        return JSONResponse(status_code= 404,content={'mensaje':'No se encontro la tienda'})
+    else:
+        return JSONResponse(status_code=200,content=jsonable_encoder(resultado))
+    '''
     datos =[elemento for elemento in List_venta if elemento['tienda'] == tienda] #12
     print(datos)
     #return [elemento for elemento in List_venta if elemento['tienda'] == tienda] #4
     return JSONResponse(content=datos) #12
+    '''
 
 #5          #12 JSONResponse
 @app.post('/ventas',tags=['Ventas'],response_model=List[Ventas],status_code=201)
