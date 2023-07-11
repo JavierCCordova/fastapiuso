@@ -107,15 +107,20 @@ def venta_obt(venta:Ventas)->dict:
     #return List_venta
     return JSONResponse(content={'mensaje':'Actualizada venta'},status_code=201)
 '''
-@app.put('/venta_ob/{id}',tags=['venta_obt'],response_model=List[Ventas],status_code=201)
-def venta_act(id:int, ventas:Ventas)->List[Ventas]:
+@app.put('/venta_ob/{id}',tags=['venta_obt'],response_model=dict,status_code=201)
+def venta_act(id:int, ventas:Ventas)->dict:
   
     db =sesion()
-    resultado = db.query(Ventas_modelo).filter(Ventas_modelo.id == id).all()
+    resultado = db.query(Ventas_modelo).filter(Ventas_modelo.id == id).first()
     if not resultado:
-        return JSONResponse(status_code=404,content={'mensaje':'No se encontro id'})
+        return JSONResponse(status_code=404,content={'mensaje':'No se actualizo'})
     else:
-        return JSONResponse(status_code=200,content=jsonable_encoder(resultado))
+        resultado.fecha  = ventas.fecha
+        resultado.tienda = ventas.tienda
+        resultado.importe = ventas.importe
+        db.commit
+        return JSONResponse(status_code=200,content={'mensaje':'registro actualizado'})
+    
 
 ######## Tipo Clase ################3
 
@@ -204,13 +209,22 @@ def actualizamos_venta(id:int,fecha:str=Body(),tienda:str=Body(),importe:float=B
 #7   #12 JSONResponse
 @app.delete('/ventas/{id}',tags=['Ventas'],response_model=dict,status_code=200)
 def eliminar_ventas(id:int)->dict:
+    db= sesion()
+    resultado = db.query(Ventas_modelo).filter(Ventas_modelo.id==id).first()
+    if not resultado:
+        return JSONResponse(status_code=200, content={'mensaje':'No se pudo borrar'})
+    else:
+        db.delete(resultado)
+        db.commit()
+        return JSONResponse(status_code=200,content={'mensaje':'Se Elimino'})
+    '''
     for element in List_venta:
         if element['id'] == id:
             List_venta.remove(element)
             return JSONResponse(content={'mensaje':'Se elimino sin inconvenientes'})
         #return List_venta
     return JSONResponse(content={'mensaje':'No se encontro'},status_code=200)
-
+    '''
 #uvicorn main:app --reload
 #uvicorn main:app --reload --port 5000
 #uvicorn main:app --reload --port 5000 --host 0.0.0.0
